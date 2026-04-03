@@ -71,7 +71,7 @@ resource "aws_subnet" "DB-Private-A" {
 
 resource "aws_subnet" "DB-Private-B" {
   vpc_id     = aws_vpc.ThreeTier-VPC.id
-  cidr_block = "10.22.0.0/24"
+  cidr_block = "10.0.22.0/24"
   availability_zone = "us-east-1b"
   map_public_ip_on_launch = false
 
@@ -137,7 +137,7 @@ resource "aws_route_table" "Private-RT" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_nat_gateway.ThreeTier-NATGW.id
+    nat_gateway_id = aws_nat_gateway.ThreeTier-NATGW.id
   }
 
   tags = {
@@ -195,7 +195,7 @@ resource "aws_security_group" "Web-SG" {
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
   security_group_id = aws_security_group.Web-SG.id
-  cidr_ipv4         = ["0.0.0.0/0"]
+  cidr_ipv4         = "0.0.0.0/0"
   from_port         = 22
   ip_protocol       = "tcp"
   to_port           = 22
@@ -203,7 +203,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
 
 resource "aws_vpc_security_group_ingress_rule" "allow_http" {
   security_group_id = aws_security_group.Web-SG.id
-  cidr_ipv4         = ["0.0.0.0/0"]
+  cidr_ipv4         = "0.0.0.0/0"
   from_port         = 80
   ip_protocol       = "tcp"
   to_port           = 80
@@ -211,10 +211,8 @@ resource "aws_vpc_security_group_ingress_rule" "allow_http" {
 
 resource "aws_vpc_security_group_ingress_rule" "allow_icmp" {
   security_group_id = aws_security_group.Web-SG.id
-  cidr_ipv4         = ["0.0.0.0/0"]
-  from_port         = -1
+  cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "icmp"
-  to_port           = -1
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
@@ -239,27 +237,25 @@ resource "aws_security_group" "App-SG" {
 # Create the security group rules
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh2" {
-  security_group_id = aws_security_group.App-SG.id
-  cidr_ipv4         = [aws_security_group.Web-SG.id]
-  from_port         = 22
-  ip_protocol       = "tcp"
-  to_port           = 22
+  security_group_id            = aws_security_group.App-SG.id
+  referenced_security_group_id = aws_security_group.Web-SG.id
+  from_port                    = 22
+  ip_protocol                  = "tcp"
+  to_port                      = 22
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow-app-port" {
-  security_group_id = aws_security_group.App-SG.id
-  cidr_ipv4         = [aws_security_group.Web-SG.id]
-  from_port         = 8080
-  ip_protocol       = "tcp"
-  to_port           = 8080
+  security_group_id            = aws_security_group.App-SG.id
+  referenced_security_group_id = aws_security_group.Web-SG.id
+  from_port                    = 8080
+  ip_protocol                  = "tcp"
+  to_port                      = 8080
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_icmp2" {
-  security_group_id = aws_security_group.App-SG.id
-  cidr_ipv4         = [aws_security_group.Web-SG.id]
-  from_port         = -1
-  ip_protocol       = "icmp"
-  to_port           = -1
+  security_group_id            = aws_security_group.App-SG.id
+  referenced_security_group_id = aws_security_group.Web-SG.id
+  ip_protocol                  = "icmp"
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4-2" {
@@ -284,27 +280,25 @@ resource "aws_security_group" "DB-SG" {
 # Create the security group rules
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh3" {
-  security_group_id = aws_security_group.DB-SG.id
-  cidr_ipv4         = [aws_security_group.App-SG.id]
-  from_port         = 22
-  ip_protocol       = "tcp"
-  to_port           = 22
+  security_group_id            = aws_security_group.DB-SG.id
+  referenced_security_group_id = aws_security_group.App-SG.id
+  from_port                    = 22
+  ip_protocol                  = "tcp"
+  to_port                      = 22
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow-DB-port" {
-  security_group_id = aws_security_group.DB-SG.id
-  cidr_ipv4         = [aws_security_group.App-SG.id]
-  from_port         = 3306
-  ip_protocol       = "tcp"
-  to_port           = 3306
+  security_group_id            = aws_security_group.DB-SG.id
+  referenced_security_group_id = aws_security_group.App-SG.id
+  from_port                    = 3306
+  ip_protocol                  = "tcp"
+  to_port                      = 3306
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_icmp3" {
-  security_group_id = aws_security_group.DB-SG.id
-  cidr_ipv4         = [aws_security_group.App-SG.id]
-  from_port         = -1
-  ip_protocol       = "icmp"
-  to_port           = -1
+  security_group_id            = aws_security_group.DB-SG.id
+  referenced_security_group_id = aws_security_group.App-SG.id
+  ip_protocol                  = "icmp"
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4-3" {
@@ -334,11 +328,11 @@ data "aws_ami" "ubuntu" {
 }
 
 resource "aws_instance" "Bastion-server" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  subnet_id = aws_subnet.Web-Public-A.id
-  security_groups = [aws_security_group.Web-SG.id]
-  key_name = "var.key_name"
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.Web-Public-A.id
+  vpc_security_group_ids = [aws_security_group.Web-SG.id]
+  key_name               = var.key_name
 
   tags = {
     Name = "Bastion-server"
@@ -346,11 +340,11 @@ resource "aws_instance" "Bastion-server" {
 }
 
 resource "aws_instance" "Web-VM" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  subnet_id = aws_subnet.Web-Public-B.id
-  security_groups = [aws_security_group.Web-SG.id]
-  key_name = "var.key_name"
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.Web-Public-B.id
+  vpc_security_group_ids = [aws_security_group.Web-SG.id]
+  key_name               = var.key_name
 
   tags = {
     Name = "Web-VM"
@@ -358,11 +352,11 @@ resource "aws_instance" "Web-VM" {
 }
 
 resource "aws_instance" "App-VM" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  subnet_id = aws_subnet.App-Private-A.id
-  security_groups = [aws_security_group.App-SG.id]
-  key_name = "var.key_name"
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.App-Private-A.id
+  vpc_security_group_ids = [aws_security_group.App-SG.id]
+  key_name               = var.key_name
 
   tags = {
     Name = "App-VM"
@@ -370,11 +364,11 @@ resource "aws_instance" "App-VM" {
 }
 
 resource "aws_instance" "DB-VM" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  subnet_id = aws_subnet.DB-Private-A.id
-  security_groups = [aws_security_group.DB-SG.id]
-  key_name = "var.key_name"
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.DB-Private-A.id
+  vpc_security_group_ids = [aws_security_group.DB-SG.id]
+  key_name               = var.key_name
 
   tags = {
     Name = "DB-VM"
