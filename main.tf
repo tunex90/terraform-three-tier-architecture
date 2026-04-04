@@ -212,7 +212,9 @@ resource "aws_vpc_security_group_ingress_rule" "allow_http" {
 resource "aws_vpc_security_group_ingress_rule" "allow_icmp" {
   security_group_id = aws_security_group.Web-SG.id
   cidr_ipv4         = "0.0.0.0/0"
+  from_port         = -1
   ip_protocol       = "icmp"
+  to_port           = -1
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
@@ -255,7 +257,9 @@ resource "aws_vpc_security_group_ingress_rule" "allow-app-port" {
 resource "aws_vpc_security_group_ingress_rule" "allow_icmp2" {
   security_group_id            = aws_security_group.App-SG.id
   referenced_security_group_id = aws_security_group.Web-SG.id
+  from_port                    = -1
   ip_protocol                  = "icmp"
+  to_port                      = -1
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4-2" {
@@ -298,7 +302,9 @@ resource "aws_vpc_security_group_ingress_rule" "allow-DB-port" {
 resource "aws_vpc_security_group_ingress_rule" "allow_icmp3" {
   security_group_id            = aws_security_group.DB-SG.id
   referenced_security_group_id = aws_security_group.App-SG.id
+  from_port                    = -1
   ip_protocol                  = "icmp"
+  to_port                      = -1
 }
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4-3" {
